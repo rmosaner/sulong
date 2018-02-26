@@ -29,6 +29,12 @@
  */
 package com.oracle.truffle.llvm.parser.model.functions;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.llvm.parser.metadata.MDAttachment;
@@ -46,16 +52,11 @@ import com.oracle.truffle.llvm.parser.model.symbols.instructions.Instruction;
 import com.oracle.truffle.llvm.parser.model.symbols.instructions.ValueInstruction;
 import com.oracle.truffle.llvm.parser.model.visitors.FunctionVisitor;
 import com.oracle.truffle.llvm.parser.model.visitors.SymbolVisitor;
+import com.oracle.truffle.llvm.parser.util.LLVMLoopFinder;
 import com.oracle.truffle.llvm.runtime.debug.scope.LLVMSourceLocation;
 import com.oracle.truffle.llvm.runtime.types.FunctionType;
 import com.oracle.truffle.llvm.runtime.types.Type;
 import com.oracle.truffle.llvm.runtime.types.symbols.LLVMIdentifier;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class FunctionDefinition implements Constant, ValueSymbol, MetadataAttachmentHolder {
 
@@ -72,12 +73,20 @@ public final class FunctionDefinition implements Constant, ValueSymbol, Metadata
     private InstructionBlock[] blocks = EMPTY;
     private int currentBlock = 0;
     private String name;
+    private Set<List<Integer>> loops;
 
     public FunctionDefinition(FunctionType type, String name, Linkage linkage, AttributesCodeEntry paramAttr) {
         this.type = type;
         this.name = name;
         this.paramAttr = paramAttr;
         this.linkage = linkage;
+
+        this.loops = new HashSet<>();
+    }
+
+    public void updateLoops() {
+        LLVMLoopFinder loopFinder = new LLVMLoopFinder(this);
+        this.loops = loopFinder.findLoops();
     }
 
     public FunctionDefinition(FunctionType type, Linkage linkage, AttributesCodeEntry paramAttr) {
@@ -95,6 +104,10 @@ public final class FunctionDefinition implements Constant, ValueSymbol, Metadata
             mdAttachments = new ArrayList<>(1);
         }
         return mdAttachments;
+    }
+
+    public Set<List<Integer>> getLoops() {
+        return loops;   // TODO copy before return
     }
 
     public Linkage getLinkage() {
