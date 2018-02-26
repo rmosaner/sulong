@@ -215,4 +215,6 @@ public interface NodeFactory {
     LLVMMemSetNode createMemSet();
 
     LLVMAllocateStringNode createAllocateString();
+
+    LLVMExpressionNode createLoopNode(LLVMExpressionNode[] basicBlocks, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller);
 }

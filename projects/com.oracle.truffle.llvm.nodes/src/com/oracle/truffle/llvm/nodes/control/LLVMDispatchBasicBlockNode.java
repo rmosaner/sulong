@@ -52,14 +52,18 @@ import com.oracle.truffle.llvm.runtime.nodes.api.LLVMExpressionNode;
 public final class LLVMDispatchBasicBlockNode extends LLVMExpressionNode {
 
     private final FrameSlot exceptionValueSlot;
+
     private final LLVMSourceLocation source;
-    @Children private final LLVMBasicBlockNode[] bodyNodes;
+    @Children private final LLVMExpressionNode[] bodyNodes;
+
     @CompilationFinal(dimensions = 2) private final FrameSlot[][] beforeBlockNuller;
     @CompilationFinal(dimensions = 2) private final FrameSlot[][] afterBlockNuller;
     @Children private final LLVMExpressionNode[] copyArgumentsToFrame;
 
-    public LLVMDispatchBasicBlockNode(FrameSlot exceptionValueSlot, LLVMBasicBlockNode[] bodyNodes, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller, LLVMSourceLocation source,
+
+    public LLVMDispatchBasicBlockNode(FrameSlot exceptionValueSlot, LLVMExpressionNode[] bodyNodes, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller, LLVMSourceLocation source,
                     LLVMExpressionNode[] copyArgumentsToFrame) {
+
         this.exceptionValueSlot = exceptionValueSlot;
         this.bodyNodes = bodyNodes;
         this.beforeBlockNuller = beforeBlockNuller;
@@ -87,10 +91,20 @@ public final class LLVMDispatchBasicBlockNode extends LLVMExpressionNode {
         int backEdgeCounter = 0;
         outer: while (basicBlockIndex != LLVMBasicBlockNode.RETURN_FROM_FUNCTION) {
             CompilerAsserts.partialEvaluationConstant(basicBlockIndex);
-            LLVMBasicBlockNode bb = bodyNodes[basicBlockIndex];
+
+            if(bodyNodes[basicBlockIndex] instanceof LLVMLoopNode) {
+                LLVMLoopNode loop = (LLVMLoopNode) bodyNodes[basicBlockIndex];
+                basicBlockIndex = loop.executeLoop(frame);
+                continue outer;
+            }
+
+            assert(bodyNodes[basicBlockIndex] instanceof LLVMBasicBlockNode);
+            LLVMBasicBlockNode bb = (LLVMBasicBlockNode) bodyNodes[basicBlockIndex];
 
             // execute all statements
             bb.executeStatements(frame);
+
+
 
             // execute control flow node, write phis, null stack frame slots, and dispatch to
             // the correct successor block

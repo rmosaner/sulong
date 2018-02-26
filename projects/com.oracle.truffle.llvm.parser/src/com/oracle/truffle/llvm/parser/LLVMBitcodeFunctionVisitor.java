@@ -107,6 +107,20 @@ final class LLVMBitcodeFunctionVisitor implements FunctionVisitor {
             visitor.setInstructionIndex(i);
             instruction.accept(visitor);
         }
+
         blocks.add(nodeFactory.createBasicBlockNode(runtime, visitor.getInstructions(), visitor.getControlFlowNode(), block.getBlockIndex(), block.getName()));
+    }
+
+    public void patchLoops(FrameSlot[][] nullableBeforeBlock, FrameSlot[][] nullableAfterBlock) {
+        function.updateLoops();
+        for (List<Integer> loop : function.getLoops()) {
+            LLVMExpressionNode[] basicBlocks = new LLVMExpressionNode[loop.size()];
+            int j = 0;
+            for (int i : loop) {
+                basicBlocks[j++] = blocks.get(i);
+            }
+
+            blocks.set(loop.get(0), nodeFactory.createLoopNode(basicBlocks, nullableBeforeBlock, nullableAfterBlock));
+        }
     }
 }

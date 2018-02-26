@@ -45,6 +45,7 @@ import com.oracle.truffle.llvm.nodes.control.LLVMBrUnconditionalNode;
 import com.oracle.truffle.llvm.nodes.control.LLVMConditionalBranchNode;
 import com.oracle.truffle.llvm.nodes.control.LLVMDispatchBasicBlockNode;
 import com.oracle.truffle.llvm.nodes.control.LLVMIndirectBranchNode;
+import com.oracle.truffle.llvm.nodes.control.LLVMLoopNode;
 import com.oracle.truffle.llvm.nodes.control.LLVMRetNodeFactory.LLVM80BitFloatRetNodeGen;
 import com.oracle.truffle.llvm.nodes.control.LLVMRetNodeFactory.LLVMAddressRetNodeGen;
 import com.oracle.truffle.llvm.nodes.control.LLVMRetNodeFactory.LLVMDoubleRetNodeGen;
@@ -1284,9 +1285,17 @@ public class BasicNodeFactory implements NodeFactory {
     }
 
     @Override
+
     public LLVMExpressionNode createArrayLiteral(LLVMParserRuntime runtime, List<LLVMExpressionNode> arrayValues, ArrayType arrayType) {
         assert arrayType.getNumberOfElements() == arrayValues.size();
         LLVMExpressionNode arrayAlloc = createAlloca(runtime, arrayType);
+
+    public LLVMExpressionNode createLoopNode(LLVMExpressionNode[] basicBlocks, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller) {
+        return LLVMLoopNode.create(Arrays.copyOf(basicBlocks, basicBlocks.length, LLVMExpressionNode[].class), beforeBlockNuller, afterBlockNuller);
+    }
+
+    @Override
+    public LLVMExpressionNode createArrayLiteral(LLVMParserRuntime runtime, List<LLVMExpressionNode> arrayValues, Type arrayType) {
         int nrElements = arrayValues.size();
         Type elementType = arrayType.getElementType();
         int elementSize = runtime.getContext().getByteSize(elementType);
@@ -1468,7 +1477,7 @@ public class BasicNodeFactory implements NodeFactory {
     @Override
     public LLVMExpressionNode createFunctionBlockNode(LLVMParserRuntime runtime, FrameSlot exceptionValueSlot, List<? extends LLVMExpressionNode> allFunctionNodes, FrameSlot[][] beforeBlockNuller,
                     FrameSlot[][] afterBlockNuller, LLVMSourceLocation location, LLVMExpressionNode[] copyArgumentsToFrame) {
-        return new LLVMDispatchBasicBlockNode(exceptionValueSlot, allFunctionNodes.toArray(new LLVMBasicBlockNode[allFunctionNodes.size()]), beforeBlockNuller, afterBlockNuller, location,
+        return new LLVMDispatchBasicBlockNode(exceptionValueSlot, allFunctionNodes.toArray(new LLVMExpressionNode[allFunctionNodes.size()]), beforeBlockNuller, afterBlockNuller, location,
                         copyArgumentsToFrame);
     }
 
@@ -1586,9 +1595,9 @@ public class BasicNodeFactory implements NodeFactory {
     @Override
     public LLVMExpressionNode createLLVMBuiltin(LLVMParserRuntime runtime, Symbol target, LLVMExpressionNode[] args, int callerArgumentCount, LLVMSourceLocation sourceSection) {
         /*
-         * This LLVM Builtins are *not* function intrinsics. Builtins replace statements that look
-         * like function calls but are actually LLVM intrinsics. An example is llvm.stackpointer.
-         * Also, it is not possible to retrieve the functionpointer of such pseudo-call-targets.
+         * This LLVM Builtins are *not* function intrinsics. Builtins replace statements that look like
+         * function calls but are actually LLVM intrinsics. An example is llvm.stackpointer. Also, it is not
+         * possible to retrieve the functionpointer of such pseudo-call-targets.
          *
          * This builtins shall not be used for regular function intrinsification!
          */
