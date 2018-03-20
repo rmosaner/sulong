@@ -72,54 +72,27 @@ public class LLVMLoopNode extends LLVMExpressionNode{
         @CompilationFinal(dimensions = 2) private final FrameSlot[][] beforeBlockNuller;
         @CompilationFinal(dimensions = 2) private final FrameSlot[][] afterBlockNuller;
 
-//        @CompilationFinal(dimensions = 1) private final int[] nodeIds;
-
         public LLVMRepeatingNode(LLVMExpressionNode[] basicBlocks, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller) {
             this.nodes = Arrays.copyOf(basicBlocks, basicBlocks.length);
             this.beforeBlockNuller = beforeBlockNuller;
             this.afterBlockNuller = afterBlockNuller;
 
-//            this.nodeIds = new int[nodes.length];
-//            for(int i = 0; i < nodeIds.length; i++) {
-//                LLVMExpressionNode node = nodes[i];
-//
-//                if (node instanceof LLVMBasicBlockNode) {
-//                    nodeIds[i] = ((LLVMBasicBlockNode)node).getBlockId();
-//                }else {
-//                    assert(node instanceof LLVMLoopNode);
-//                    nodeIds[i] = ((LLVMLoopNode)node).getLoopHeaderId();
-//                }
-//            }
         }
 
         @Override
         @ExplodeLoop(kind = LoopExplosionKind.MERGE_EXPLODE)
         public boolean executeRepeating(VirtualFrame frame) {
-//            int nextBlock;
-//            LLVMExpressionNode header = nodes[0];
-//            nextBlock = executeNode(header, frame);
-//            if(isInLoop(nextBlock)) {  // enter loop?
-//                // execute blocks until loop body is repeated (check successor block)
-//                LLVMExpressionNode block = nodes[getIndexOfNode(nextBlock)];
-//                do {
-//                    nextBlock = executeNode(block, frame);
-//                    if (!isInLoop(nextBlock)) {
-//                        return false;
-//                    }
-//                    block = nodes[getIndexOfNode(nextBlock)];
-//                } while (getBlockId(block) != getBlockId(header));
-//                return true;
-//            }
-//            return false;
-
+            // due to different blockIDs in overall block array and sub-array, used for
+            // LoopNode, normally calculations have to be done - this is done statically
+            // for the sample program
             int nextBlock;
-            LLVMExpressionNode header = nodes[0];
+            LLVMExpressionNode header = nodes[0];   // start at loop entry block
             nextBlock = executeNode(header, frame);
-            if(nextBlock == 2) {  // enter loop?
+            if(nextBlock == 2) {  // enter loop? statically set, normally if(isInLoop(nextBlock)
                 // execute blocks until loop body is repeated (check successor block)
                 LLVMExpressionNode block;
 
-                block = nodes[nextBlock-1];
+                block = nodes[nextBlock-1]; // normally computed
 
                 do {
                     nextBlock = executeNode(block, frame);
@@ -127,8 +100,8 @@ public class LLVMLoopNode extends LLVMExpressionNode{
                         return false;
                     }
 
-                    block = nodes[nextBlock-1];
-                } while (nextBlock != 1);
+                    block = nodes[nextBlock-1]; // normally computed
+                } while (nextBlock != 1); // statically set, normally while(nextBlock != headerID)
                 return true;
             }
             return false;
@@ -137,45 +110,8 @@ public class LLVMLoopNode extends LLVMExpressionNode{
         private int executeNode(LLVMExpressionNode node, VirtualFrame frame) {
             ((LLVMBasicBlockNode)node).executeStatements(frame);
             return getSuccessor(frame, (LLVMBasicBlockNode)node, beforeBlockNuller, afterBlockNuller);
-//            if(node instanceof LLVMBasicBlockNode) {
-//                ((LLVMBasicBlockNode)node).executeStatements(frame);
-//                return getSuccessor(frame, (LLVMBasicBlockNode)node, beforeBlockNuller, afterBlockNuller);
-//            }else {
-//                System.out.println("here");
-//                assert(node instanceof LLVMLoopNode);
-////                return ((LLVMLoopNode)node).executeLoop(frame);
-//                return 0;   // TODO
-//            }
         }
 
-//        private static int getBlockId(LLVMExpressionNode node) {
-//            if (node instanceof LLVMBasicBlockNode) {
-//                return ((LLVMBasicBlockNode)node).getBlockId();
-//            }else {
-//                assert(node instanceof LLVMLoopNode);
-//                return ((LLVMLoopNode)node).getLoopHeaderId();
-//            }
-//        }
-
-//        @ExplodeLoop
-//        private boolean isInLoop(int block) {
-//            // TODO inefficient
-//            for(int i = 0; i < nodeIds.length; i++) {
-//                if(nodeIds[i] == block) return true;
-//            }
-//            return false;
-//        }
-//
-//        @ExplodeLoop
-//        private int getIndexOfNode(int nodeId) {
-//            // TODO inefficient: store information in datastructure (hashmap) for faster lookup
-//            for (int i = 0; i < nodeIds.length; i++) {
-//                if (nodeIds[i] == nodeId) {
-//                    return i;
-//                }
-//            }
-//            return -1;
-//        }
     }
 
     private static int getSuccessor(VirtualFrame frame, LLVMBasicBlockNode bb, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller) {
