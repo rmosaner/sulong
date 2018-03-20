@@ -1285,17 +1285,14 @@ public class BasicNodeFactory implements NodeFactory {
     }
 
     @Override
-
-    public LLVMExpressionNode createArrayLiteral(LLVMParserRuntime runtime, List<LLVMExpressionNode> arrayValues, ArrayType arrayType) {
-        assert arrayType.getNumberOfElements() == arrayValues.size();
-        LLVMExpressionNode arrayAlloc = createAlloca(runtime, arrayType);
-
     public LLVMExpressionNode createLoopNode(LLVMExpressionNode[] basicBlocks, FrameSlot[][] beforeBlockNuller, FrameSlot[][] afterBlockNuller) {
         return LLVMLoopNode.create(Arrays.copyOf(basicBlocks, basicBlocks.length, LLVMExpressionNode[].class), beforeBlockNuller, afterBlockNuller);
     }
 
     @Override
-    public LLVMExpressionNode createArrayLiteral(LLVMParserRuntime runtime, List<LLVMExpressionNode> arrayValues, Type arrayType) {
+    public LLVMExpressionNode createArrayLiteral(LLVMParserRuntime runtime, List<LLVMExpressionNode> arrayValues, ArrayType arrayType) {
+        assert arrayType.getNumberOfElements() == arrayValues.size();
+        LLVMExpressionNode arrayAlloc = createAlloca(runtime, arrayType);
         int nrElements = arrayValues.size();
         Type elementType = arrayType.getElementType();
         int elementSize = runtime.getContext().getByteSize(elementType);

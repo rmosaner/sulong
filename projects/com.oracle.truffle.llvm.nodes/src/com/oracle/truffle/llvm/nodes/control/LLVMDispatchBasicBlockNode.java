@@ -94,7 +94,9 @@ public final class LLVMDispatchBasicBlockNode extends LLVMExpressionNode {
 
             if(bodyNodes[basicBlockIndex] instanceof LLVMLoopNode) {
                 LLVMLoopNode loop = (LLVMLoopNode) bodyNodes[basicBlockIndex];
-                basicBlockIndex = loop.executeLoop(frame);
+//                basicBlockIndex = loop.executeLoop(frame);
+                loop.executeGeneric(frame);
+                basicBlockIndex = 4;
                 continue outer;
             }
 

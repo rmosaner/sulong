@@ -112,6 +112,9 @@ final class LLVMBitcodeFunctionVisitor implements FunctionVisitor {
     }
 
     public void patchLoops(FrameSlot[][] nullableBeforeBlock, FrameSlot[][] nullableAfterBlock) {
+        if (!this.function.getName().contains("main"))
+            return;
+
         function.updateLoops();
         for (List<Integer> loop : function.getLoops()) {
             LLVMExpressionNode[] basicBlocks = new LLVMExpressionNode[loop.size()];

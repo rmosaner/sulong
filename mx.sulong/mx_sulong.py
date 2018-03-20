@@ -600,7 +600,6 @@ class SulongDocsProject(ArchiveProject):
 
 
 mx_benchmark.add_bm_suite(mx_sulong_benchmarks.SulongBenchmarkSuite())
-mx_benchmark.add_bm_suite(mx_sulong_benchmarks.SulongShootoutSuite())
 
 mx.update_commands(_suite, {
     'lli' : [runLLVM, ''],

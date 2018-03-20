@@ -201,96 +201,6 @@ class SulongVm(GuestVm):
         return java_vm_registry
 
 
-class SulongShootoutSuite(VmBenchmarkSuite):
-    def group(self):
-        return 'Graal'
-
-    def subgroup(self):
-        return 'sulong'
-
-    def name(self):
-        return 'shootout'
-
-    def benchmarkList(self, bmSuiteArgs):
-        benchDir = join(_benchmarksDirectory(), 'shootout')
-        if not exists(benchDir):
-            mx.abort('Benchmarks directory {} is missing'.format(benchDir))
-        return [f for f in os.listdir(benchDir) if os.path.isdir(join(benchDir, f))]
-
-    def failurePatterns(self):
-        return [
-            re.compile(r'error:'),
-            re.compile(r'Exception')
-        ]
-
-    def successPatterns(self):
-        return []
-
-    def rules(self, out, benchmarks, bmSuiteArgs):
-        return []
-
-    def createCommandLineArgs(self, benchmarks, runArgs):
-        if len(benchmarks) != 1:
-            mx.abort("Please run a specific benchmark (mx benchmark shootout:<benchmark-name>) or all the benchmarks (mx benchmark shootout:*)")
-        return [benchmarks[0]] + runArgs
-
-    def get_vm_registry(self):
-        return native_vm_registry
-
-
-class SulongBenchmarkVm(SulongVm):
-    PROCESS_ITER = 2
-    IN_PROCESS_ITER = 50
-
-    def config_name(self):
-        return "default"
-
-    def name(self):
-        return "sulong"
-
-    def run(self, cwd, args):
-        # save current Directory
-        self.currentDir = os.getcwd()
-	shootoutDir = join(_benchmarksDirectory(), 'shootout')
-        os.chdir(shootoutDir)
-
-        mx_sulong.ensureLLVMBinariesExist()
-        benchmarkDir = args[0]
-	
-        # enter benchmark dir
-        os.chdir(benchmarkDir)
-
-        suTruffleOptions = [
-            '-Dgraal.TruffleBackgroundCompilation=false',
-            '-Dgraal.TruffleTimeThreshold=1000000',
-            '-Dgraal.TruffleInliningMaxCallerSize=10000',
-            '-Dgraal.TruffleCompilationExceptionsAreFatal=true',
-            mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'),
-            '-Dpolyglot.llvm.libraries=libgmp.so.10']
-        sulongCmdLine = suTruffleOptions + mx_sulong.getClasspathOptions() + ['-XX:-UseJVMCIClassLoader', "com.oracle.truffle.llvm.BenchmarkRunner"]
-	
-	import time
-	timestr = time.strftime("%Y%m%d_%H%M%S")
-	
-	output = open(join(shootoutDir, 'results_' + timestr + '.csv'), 'w')
-	output.write("process_exec_num, bench_name")
-	for i in range(0,self.IN_PROCESS_ITER):
-		output.write("," + str(i))
-	output.close()
-
-	for i in range(0,self.PROCESS_ITER):
-		bmArgs = [shootoutDir, benchmarkDir, str(self.IN_PROCESS_ITER), str(i), output.name]
-        	result = self.host_vm().run(cwd, sulongCmdLine + bmArgs)
-
-        # reset current Directory
-        os.chdir(self.currentDir)
-
-        return result
-
-    def hosting_registry(self):
-        return java_vm_registry
-
-
 _suite = mx.suite("sulong")
 
 native_vm_registry = VmRegistry("Native", known_host_registries=[java_vm_registry])
@@ -303,4 +213,3 @@ native_vm_registry.add_vm(ClangVm('O2', ['-O2']), _suite)
 native_vm_registry.add_vm(GccVm('O3', ['-O3']), _suite)
 native_vm_registry.add_vm(ClangVm('O3', ['-O3']), _suite)
 #native_vm_registry.add_vm(SulongVm(), _suite, 10)
-native_vm_registry.add_vm(SulongBenchmarkVm(), _suite, 10)
